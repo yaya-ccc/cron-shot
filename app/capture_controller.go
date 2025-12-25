@@ -107,8 +107,13 @@ func (c *AutoCaptureController) captureAndSave(proc string, info sys_utils.Windo
 	if win.IsIconic(info.HWND) || !win.IsWindowVisible(info.HWND) {
 		return nil, ""
 	}
-	// 使用 PrintWindow 渲染窗口至位图
-	img, err := sys_utils.CaptureWindowImage(info.HWND)
+	var img *image.RGBA
+	var err error
+	if win.GetForegroundWindow() == info.HWND {
+		img, err = sys_utils.CaptureWindowImageBitBlt(info.HWND)
+	} else {
+		img, err = sys_utils.CaptureWindowImage(info.HWND)
+	}
 	if err != nil {
 		logging.Error("capture failed: " + err.Error())
 		return nil, ""

@@ -21,14 +21,6 @@ func GetProcessWindows(processName string) ([]string, error) {
 	return titles, nil
 }
 
-// 辅助函数：直接调用 User32.dll
-var (
-	user32                   = syscall.NewLazyDLL("user32.dll")
-	procGetWindowTextLengthW = user32.NewProc("GetWindowTextLengthW")
-	procGetWindowTextW       = user32.NewProc("GetWindowTextW")
-	procEnumWindows          = user32.NewProc("EnumWindows")
-)
-
 // getWindowTextLength 返回窗口标题长度
 func getWindowTextLength(hwnd win.HWND) int32 {
 	ret, _, _ := procGetWindowTextLengthW.Call(uintptr(hwnd))

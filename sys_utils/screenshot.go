@@ -6,7 +6,6 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -15,25 +14,51 @@ import (
 	"github.com/lxn/win"
 )
 
-// CaptureWindowImage 使用 PrintWindow 渲染窗口；失败时记录日志，不进行回退
+func getWindowDC(hwnd win.HWND) win.HDC {
+	ret, _, _ := procGetWindowDC.Call(uintptr(hwnd))
+	return win.HDC(ret)
+}
+
 func CaptureWindowImage(hwnd win.HWND) (*image.RGBA, error) {
+	return captureInternal(hwnd, true)
+}
+
+func CaptureWindowImageBitBlt(hwnd win.HWND) (*image.RGBA, error) {
+	return captureInternal(hwnd, false)
+}
+
+func captureInternal(hwnd win.HWND, usePrintWindow bool) (*image.RGBA, error) {
 	var rect win.RECT
 	win.GetWindowRect(hwnd, &rect)
 	width := int(rect.Right - rect.Left)
 	height := int(rect.Bottom - rect.Top)
-	hdcScreen := win.GetDC(0)
-	defer win.ReleaseDC(0, hdcScreen)
-	hdcMem := win.CreateCompatibleDC(hdcScreen)
+	var srcDC win.HDC
+	if usePrintWindow {
+		srcDC = win.GetDC(0)
+		defer win.ReleaseDC(0, srcDC)
+	} else {
+		srcDC = getWindowDC(hwnd)
+		if srcDC == 0 {
+			return nil, errors.New("GetWindowDC failed")
+		}
+		defer win.ReleaseDC(hwnd, srcDC)
+	}
+	hdcMem := win.CreateCompatibleDC(srcDC)
 	defer win.DeleteDC(hdcMem)
-	hbm := win.CreateCompatibleBitmap(hdcScreen, int32(width), int32(height))
+	hbm := win.CreateCompatibleBitmap(srcDC, int32(width), int32(height))
 	defer win.DeleteObject(win.HGDIOBJ(hbm))
 	win.SelectObject(hdcMem, win.HGDIOBJ(hbm))
-	const PW_RENDERFULLCONTENT = 0x00000002
-	user32 := syscall.NewLazyDLL("user32.dll")
-	printWindow := user32.NewProc("PrintWindow")
-	r, _, _ := printWindow.Call(uintptr(hwnd), uintptr(hdcMem), uintptr(PW_RENDERFULLCONTENT))
-	if r == 0 {
-		return nil, errors.New("PrintWindow failed")
+	if usePrintWindow {
+		const PW_RENDERFULLCONTENT = 0x00000002
+		r, _, _ := procPrintWindow.Call(uintptr(hwnd), uintptr(hdcMem), uintptr(PW_RENDERFULLCONTENT))
+		if r == 0 {
+			return nil, errors.New("PrintWindow failed")
+		}
+	} else {
+		const SRCCOPY = 0x00CC0020
+		if !win.BitBlt(hdcMem, 0, 0, int32(width), int32(height), srcDC, 0, 0, uint32(SRCCOPY)) {
+			return nil, errors.New("BitBlt failed")
+		}
 	}
 	var bmi win.BITMAPINFO
 	bmi.BmiHeader.BiSize = uint32(unsafe.Sizeof(bmi.BmiHeader))
