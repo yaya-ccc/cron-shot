@@ -109,10 +109,6 @@ func (c *AutoCaptureController) captureAndSave(proc string, info sys_utils.Windo
 	if allowBackgroundCapture && (!isForeground || isMinimized || !isVisible) {
 		logging.Info("capture mode: PrintWindow, title=" + info.Title)
 		img, err = sys_utils.CaptureWindowImage(info.HWND)
-		if err != nil && isVisible && !isMinimized {
-			logging.Info("capture fallback: PrintWindow -> BitBlt for inactive window, title=" + info.Title)
-			img, err = sys_utils.CaptureWindowImageBitBlt(info.HWND)
-		}
 	} else {
 		logging.Info("capture mode: BitBlt, title=" + info.Title)
 		img, err = sys_utils.CaptureWindowImageBitBlt(info.HWND)
