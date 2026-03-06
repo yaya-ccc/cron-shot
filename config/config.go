@@ -27,15 +27,16 @@ type AppRule struct {
 // AutostartEnabled: 开机自启；AutoCaptureEnabled: 启动后自动开启截图；
 // SilentStartEnabled: 静默启动到托盘；Rules: 规则列表
 type AppConfig struct {
-	StorageRoot           string    `json:"storage_root"`
-	ScreenshotIntervalSec int       `json:"screenshot_interval_sec"`
-	DedupeEnabled         bool      `json:"dedupe_enabled"`
-	DedupeThreshold       int       `json:"dedupe_threshold"`
-	CurrentProcess        string    `json:"current_process"`
-	AutostartEnabled      bool      `json:"autostart_enabled"`
-	AutoCaptureEnabled    bool      `json:"auto_capture_enabled"`
-	SilentStartEnabled    bool      `json:"silent_start_enabled"`
-	Rules                 []AppRule `json:"rules"`
+	StorageRoot                  string    `json:"storage_root"`
+	ScreenshotIntervalSec        int       `json:"screenshot_interval_sec"`
+	DedupeEnabled                bool      `json:"dedupe_enabled"`
+	DedupeThreshold              int       `json:"dedupe_threshold"`
+	AllowBackgroundWindowCapture bool      `json:"allow_background_window_capture"`
+	CurrentProcess               string    `json:"current_process"`
+	AutostartEnabled             bool      `json:"autostart_enabled"`
+	AutoCaptureEnabled           bool      `json:"auto_capture_enabled"`
+	SilentStartEnabled           bool      `json:"silent_start_enabled"`
+	Rules                        []AppRule `json:"rules"`
 }
 
 var (
@@ -49,6 +50,7 @@ func Init() {
 	app.ScreenshotIntervalSec = 5
 	app.DedupeEnabled = false
 	app.DedupeThreshold = 100
+	app.AllowBackgroundWindowCapture = false
 	_ = Load()
 }
 
@@ -91,6 +93,7 @@ func Load() error {
 	if c.DedupeThreshold > 0 {
 		app.DedupeThreshold = c.DedupeThreshold
 	}
+	app.AllowBackgroundWindowCapture = c.AllowBackgroundWindowCapture
 	app.CurrentProcess = c.CurrentProcess
 	app.AutostartEnabled = c.AutostartEnabled
 	app.AutoCaptureEnabled = c.AutoCaptureEnabled
@@ -144,6 +147,19 @@ func SetDedupeEnabled(v bool) { mu.Lock(); app.DedupeEnabled = v; mu.Unlock(); _
 
 func GetDedupeThreshold() int  { mu.RLock(); defer mu.RUnlock(); return app.DedupeThreshold }
 func SetDedupeThreshold(n int) { mu.Lock(); app.DedupeThreshold = n; mu.Unlock(); _ = Save() }
+
+func GetAllowBackgroundWindowCapture() bool {
+	mu.RLock()
+	defer mu.RUnlock()
+	return app.AllowBackgroundWindowCapture
+}
+
+func SetAllowBackgroundWindowCapture(v bool) {
+	mu.Lock()
+	app.AllowBackgroundWindowCapture = v
+	mu.Unlock()
+	_ = Save()
+}
 
 // GetCurrentProcess 返回当前监控进程名
 func GetCurrentProcess() string { mu.RLock(); defer mu.RUnlock(); return app.CurrentProcess }

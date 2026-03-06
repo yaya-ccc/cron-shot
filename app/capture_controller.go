@@ -109,9 +109,9 @@ func (c *AutoCaptureController) captureAndSave(proc string, info sys_utils.Windo
 	}
 	var img *image.RGBA
 	var err error
-	if win.GetForegroundWindow() == info.HWND {
-		img, err = sys_utils.CaptureWindowImageBitBlt(info.HWND)
-	} else {
+	img, err = sys_utils.CaptureWindowImageBitBlt(info.HWND)
+	if err != nil && config.GetAllowBackgroundWindowCapture() {
+		logging.Info("BitBlt failed, fallback to PrintWindow for background window: " + info.Title)
 		img, err = sys_utils.CaptureWindowImage(info.HWND)
 	}
 	if err != nil {

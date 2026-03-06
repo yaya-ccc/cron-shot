@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"image/color"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,7 +18,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 )
@@ -212,6 +215,27 @@ func onSettingsButtonTapped(_ fyne.App, autoEnabled *bool, autoStopChanPtr *chan
 			thresholdRow.Hide()
 		}
 	}
+	toggleAllowBackgroundWindowCapture := widget.NewCheck(constants.TextAllowBackgroundWindowCaptureTitle, nil)
+	toggleAllowBackgroundWindowCapture.SetChecked(config.GetAllowBackgroundWindowCapture())
+	bgNoteText := canvas.NewText(constants.TextAllowBackgroundWindowCaptureNote, color.NRGBA{R: 121, G: 70, B: 5, A: 255})
+	bgNoteText.TextSize = theme.Size(theme.SizeNameCaptionText)
+	bgNoteText.TextStyle = fyne.TextStyle{Bold: true}
+	bgNoteBg := canvas.NewRectangle(color.NRGBA{R: 255, G: 244, B: 230, A: 245})
+	bgNoteBg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	bgNoteBg.StrokeColor = color.NRGBA{R: 232, G: 167, B: 73, A: 255}
+	bgNoteBg.StrokeWidth = 1
+	bgNote := container.NewStack(bgNoteBg, container.NewPadded(bgNoteText))
+	bgNote.Hide()
+	if toggleAllowBackgroundWindowCapture.Checked {
+		bgNote.Show()
+	}
+	toggleAllowBackgroundWindowCapture.OnChanged = func(v bool) {
+		if v {
+			bgNote.Show()
+			return
+		}
+		bgNote.Hide()
+	}
 	toggleAutoStart := widget.NewCheck(constants.TextAutoStartTitle, func(v bool) {})
 	toggleAutoStart.SetChecked(config.GetAutostartEnabled())
 	toggleAutoCapture := widget.NewCheck(constants.TextAutoCaptureTitle, func(v bool) {})
@@ -246,6 +270,7 @@ func onSettingsButtonTapped(_ fyne.App, autoEnabled *bool, autoStopChanPtr *chan
 			th = 100
 		}
 		config.SetDedupeThreshold(th)
+		config.SetAllowBackgroundWindowCapture(toggleAllowBackgroundWindowCapture.Checked)
 		config.SetAutostartEnabled(toggleAutoStart.Checked)
 		config.SetAutoCaptureEnabled(toggleAutoCapture.Checked)
 		config.SetSilentStartEnabled(toggleSilentStart.Checked)
@@ -266,6 +291,8 @@ func onSettingsButtonTapped(_ fyne.App, autoEnabled *bool, autoStopChanPtr *chan
 		entryInterval,
 		toggleDedupe,
 		thresholdRow,
+		toggleAllowBackgroundWindowCapture,
+		bgNote,
 		toggleAutoStart,
 		toggleAutoCapture,
 		toggleSilentStart,
@@ -273,7 +300,7 @@ func onSettingsButtonTapped(_ fyne.App, autoEnabled *bool, autoStopChanPtr *chan
 	)
 	wrapped := fynetooltip.AddWindowToolTipLayer(container.NewPadded(form), w.Canvas())
 	w.SetContent(wrapped)
-	w.Resize(fyne.NewSize(480, 280))
+	w.Resize(fyne.NewSize(520, 360))
 	w.SetOnClosed(func() { fynetooltip.DestroyWindowToolTipLayer(w.Canvas()) })
 	w.Show()
 }

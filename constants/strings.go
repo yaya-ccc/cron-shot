@@ -9,6 +9,11 @@ const (
 	TextTrayExit           = "退出"
 )
 
+const (
+	TextAllowBackgroundWindowCaptureTitle = "允许截图后台窗口"
+	TextAllowBackgroundWindowCaptureNote  = "开启后可能造成卡顿。"
+)
+
 // GUI 文本常量
 const (
 	TextAppTitle           = "CronShot"
