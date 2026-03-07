@@ -9,6 +9,11 @@ const (
 	TextTrayExit           = "退出"
 )
 
+const (
+	TextAllowBackgroundWindowCaptureTitle = "截图非活跃窗口"
+	TextAllowBackgroundWindowCaptureNote  = "开启后可能造成卡顿。"
+)
+
 // GUI 文本常量
 const (
 	TextAppTitle           = "CronShot"
@@ -28,14 +33,14 @@ const (
 	TextAutoCaptureTitle   = "自动开启截图"
 	TextSilentStartTitle   = "静默启动"
 	TextAbout              = "关于"
-	TextRulesHeader        = "已添加规则:"
+	TextRulesHeader        = "已添加规则"
 	TextRuleLabel          = "规则:"
 	TextAdd                = "新增"
 	TextActivate           = "激活"
 	TextDeactivate         = "禁用"
 	TextDelete             = "删除"
 	TextConfig             = "配置"
-	TextWindowStatusHeader = "进程窗口状态:"
+	TextWindowStatusHeader = "进程窗口状态"
 	TextStorageRuleTitle   = "存储文件夹规则"
 	TextFixedFolderTitle   = "固定文件夹"
 	PlaceholderStorageRule = "未配置时，默认以窗口名称存储。"

@@ -1,6 +1,7 @@
 package sys_utils
 
 import (
+	"errors"
 	"strings"
 
 	"golang.org/x/sys/windows/registry"
@@ -38,7 +39,7 @@ func IsAutoStartRegistered(appName string) (bool, string, error) {
 	defer k.Close()
 	v, _, err := k.GetStringValue(appName)
 	if err != nil {
-		if err == registry.ErrNotExist {
+		if errors.Is(err, registry.ErrNotExist) {
 			return false, "", nil
 		}
 		return false, "", err
