@@ -133,6 +133,7 @@ func (c *AutoCaptureController) captureAndSave(proc string, info sys_utils.Windo
 		logging.Error("save failed: " + err.Error())
 		return img, ""
 	}
+	RememberSavedCapture(config.GetStorageRoot(), proc, fixed, folder, p, img)
 
 	logging.Info("screenshot saved: " + p)
 	return img, p

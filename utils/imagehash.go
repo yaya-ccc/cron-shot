@@ -10,19 +10,25 @@ import (
 	"time"
 )
 
-// AHash16x16 生成16x16平均哈希（256位）
+type LatestPNG struct {
+	Path    string
+	ModTime time.Time
+	Image   image.Image
+}
+
+// AHash16x16 generates a 16x16 average hash.
 func AHash16x16(img *image.RGBA) []byte {
 	w, h := 16, 16
-	// 计算缩放步长
 	srcW := img.Bounds().Dx()
 	srcH := img.Bounds().Dy()
 	if srcW == 0 || srcH == 0 {
 		return make([]byte, 32)
 	}
+
 	stepX := float64(srcW) / float64(w)
 	stepY := float64(srcH) / float64(h)
 	gray := make([]float64, w*h)
-	// 采样像素并转灰度
+
 	idx := 0
 	var sum float64
 	for y := 0; y < h; y++ {
@@ -42,17 +48,18 @@ func AHash16x16(img *image.RGBA) []byte {
 			idx++
 		}
 	}
+
 	avg := sum / float64(w*h)
 	bits := make([]byte, 32)
 	for i := 0; i < w*h; i++ {
 		if gray[i] >= avg {
-			bits[i>>3] |= (1 << uint(7-(i&7)))
+			bits[i>>3] |= 1 << uint(7-(i&7))
 		}
 	}
 	return bits
 }
 
-// Hamming256 计算两个256位哈希的汉明距离
+// Hamming256 returns the Hamming distance for two 256-bit hashes.
 func Hamming256(a, b []byte) int {
 	if len(a) != 32 || len(b) != 32 {
 		return 256
@@ -60,7 +67,6 @@ func Hamming256(a, b []byte) int {
 	dist := 0
 	for i := 0; i < 32; i++ {
 		x := a[i] ^ b[i]
-		// 位计数
 		x = (x & 0x55) + ((x >> 1) & 0x55)
 		x = (x & 0x33) + ((x >> 2) & 0x33)
 		x = (x & 0x0F) + ((x >> 4) & 0x0F)
@@ -69,7 +75,7 @@ func Hamming256(a, b []byte) int {
 	return dist
 }
 
-// AHashFromImage 生成任意 image.Image 的16x16平均哈希
+// AHashFromImage generates a 16x16 average hash for any image.Image.
 func AHashFromImage(img image.Image) []byte {
 	b := img.Bounds()
 	rgba := image.NewRGBA(b)
@@ -77,52 +83,66 @@ func AHashFromImage(img image.Image) []byte {
 	return AHash16x16(rgba)
 }
 
-// LatestPNGImage 返回目录下最新PNG文件的解码图像；不存在则返回nil
+// LatestPNGImage returns the latest PNG image in a directory.
 func LatestPNGImage(dir string) (image.Image, error) {
+	latest, err := LoadLatestPNG(dir)
+	if err != nil || latest == nil {
+		return nil, err
+	}
+	return latest.Image, nil
+}
+
+// LoadLatestPNG returns the latest PNG image in a directory with metadata.
+func LoadLatestPNG(dir string) (*LatestPNG, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
+
 	var latestPath string
 	var latestMod time.Time
-	for _, e := range entries {
-		if e.IsDir() {
+	for _, entry := range entries {
+		if entry.IsDir() {
 			continue
 		}
-		name := strings.ToLower(e.Name())
+		name := strings.ToLower(entry.Name())
 		if !strings.HasSuffix(name, ".png") {
 			continue
 		}
-		info, err := e.Info()
+		info, err := entry.Info()
 		if err != nil {
 			continue
 		}
 		if info.ModTime().After(latestMod) {
 			latestMod = info.ModTime()
-			latestPath = filepath.Join(dir, e.Name())
+			latestPath = filepath.Join(dir, entry.Name())
 		}
 	}
+
 	if latestPath == "" {
 		return nil, nil
 	}
+
 	f, err := os.Open(latestPath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
+
 	img, err := png.Decode(f)
 	if err != nil {
 		return nil, err
 	}
-	return img, nil
+	return &LatestPNG{Path: latestPath, ModTime: latestMod, Image: img}, nil
 }
 
-// ImagesEqualExact 比较两张图是否像素完全一致（尺寸与像素均相同）
+// ImagesEqualExact compares two images pixel-by-pixel.
 func ImagesEqualExact(a *image.RGBA, b image.Image) bool {
 	bounds := b.Bounds()
 	if a.Bounds().Dx() != bounds.Dx() || a.Bounds().Dy() != bounds.Dy() {
 		return false
 	}
+
 	rgba := image.NewRGBA(bounds)
 	draw.Draw(rgba, bounds, b, bounds.Min, draw.Src)
 	ap := a.Pix
