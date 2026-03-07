@@ -32,6 +32,9 @@ func captureInternal(hwnd win.HWND, usePrintWindow bool) (*image.RGBA, error) {
 	win.GetWindowRect(hwnd, &rect)
 	width := int(rect.Right - rect.Left)
 	height := int(rect.Bottom - rect.Top)
+	if width <= 0 || height <= 0 {
+		return nil, errors.New("invalid window bounds")
+	}
 	var srcDC win.HDC
 	if usePrintWindow {
 		srcDC = win.GetDC(0)
@@ -69,6 +72,9 @@ func captureInternal(hwnd win.HWND, usePrintWindow bool) (*image.RGBA, error) {
 	bmi.BmiHeader.BiCompression = win.BI_RGB
 	stride := width * 4
 	buf := make([]byte, stride*height)
+	if len(buf) == 0 {
+		return nil, errors.New("empty capture buffer")
+	}
 	win.GetDIBits(hdcMem, hbm, 0, uint32(height), &buf[0], &bmi, win.DIB_RGB_COLORS)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	pi := 0
